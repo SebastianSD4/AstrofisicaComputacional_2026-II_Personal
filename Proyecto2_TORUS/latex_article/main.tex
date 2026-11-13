@@ -128,6 +128,11 @@
 
 \section{INTRODUCCIÓN}
 
+PLUTO es un software de simulación numérica de sistemas de ecuaciones diferenciales parciales (PDEs) hiperbólicas y parabólicas que representan las leyes de conservación de alguno de los posibles sistemas de estudio, escrito en el lenguaje de programación C. Caracterizado por un alto grado de flexibilidad y diseño modular, PLUTO permite solucionar varios sistemas dentro del estudio de la dinámica de plasmas astrofísicos de grandes velocidades.
+
+\medskip
+
+Con base en esto, la reproducción de los resultados obtenidos por medio de esta herramienta sirve como una gran oportunidad e estudio para comprender la física detrás de sus simulaciones y la gran variedad de métodos numéricos que utiliza para este fin.
 
 \section{MARCO TEÓRICO Y ESTADO DEL ARTE}
 
@@ -304,7 +309,8 @@ X3-beg        outflow
 X3-end        outflow
 \end{lstlisting}
 
-\subsubsection{Frontera radial ($1 \leq r \leq 20$)}
+\subsubsection{\texorpdfstring{Frontera angular ($1 \leq r \leq 20$)}
+  {Frontera angular (1 <= r <= 20)}}
 
 La condición \lstinline[language=C]{userdef} para la frontera interna de $r$ (\lstinline[language=C]{X1_BEG}) establece el uso de la función \lstinline[language=C]{UserDefBoundary} dentro del archivo \lstinline[language=C]{init.c} de la manera descrita en Cód.\ref{lst:userdefboundary}.
 \begin{lstlisting}[language=C, caption={Definición de condición en la frontera radial interna.}, label={lst:userdefboundary}]
@@ -356,7 +362,8 @@ La condición \lstinline[language=C]{outflow} en la frontera externa de $r$ esta
 \end{align*}
 Esto implica que el plasma fluye hacia el exterior del dominio de trabajo sin experimentar cambios drásticos, evitando relfexiones espurias.
 
-\subsubsection{Frontera angular ($0 \leq \theta \leq \pi$)}
+\subsubsection{\texorpdfstring{Frontera angular ($0 \leq \theta \leq \pi$)}
+  {Frontera angular (0 <= theta <= pi)}}
 
 La condición \lstinline[language=C]{axisymmetric} para las fronteras de $\theta$ establece paredes rígidas, en las cuales las componentes normales y angulares cambian de signo:
 \begin{align*}
@@ -395,10 +402,22 @@ Kuwabara, Shibata, Kudoh y Matsumoto (2005)\cite{Kuwabara} realizaron estudios p
 
 Estos trabajos ofrecen avances fundamentales para el desarrollo de este trabajo, describiendo el comportamiento del toro en las condiciones adecuadas y determinando los campos de estudio por fuera del alcance del mismo. Papaloizou y Pringe introducen la idea de una inestabilidad en modos azimutales de momento angular constante, caso no estudiado durante el desarrollo principal del presente informe. Hawley establece la existencia de una inestabilidad adicional relacionada al campo magnético mientras que Kuwabara y compañía presentan el equilibrio en dos dimensiones.
 
+\section{Metodología}
+
+Para realizar el debido proceso de comparación, se ejecuta en primera instancia el código de PLUTO, utilizando como se ha mencionado anteriormente, los parámetros de \lstinline[language=C]|definitions_03.h| y \lstinline[language=C]|pluto_03.ini|. La única diferencia se encuentra en la alteración de los límites temporales, los cuales se aumentaron para visibilizar un mayor rango de evolución dentro del sistema.
+
+\medskip
+
+Con esto se obtiene un conjunto de archivos \lstinline[language=C]|.dbl| en cada paso de tiempo, con las variables $prs$, $rho$, $vx1$, $vx2$, $vx3$, $Bx1$, $Bx2$, $Bx3$ y $tr1$ en la malla bidimensional definida. Utilizando el paquete \lstinline[language=C]|pyPLUTO| es posible graficar estas variables para una posterior comparación.
+
+\medskip
+
+Una vez conseguidos los resultados de la simulación se realiza un intento de reproducción de los resultados en Python. Este procedimiento se divide en: creación de malla, inicialización, condiciones de frontera y solución temporal. Estos pasos se realizan siguiendo la estructura general del procedimiento descrito por el código PLUTO en \lstinline[language=C]|init.c| y otros.
+
 \section{Simulación PLUTO}
 
 Utilizando las configuraciones definidas en los archivos \lstinline[language=C]{definitions_03.h} y \lstinline[language=C]{pluto_03.ini} es posible obtener los gráficos para el comportamiento espacial de las variables de interés; $\rho$, $v_r$, $v_\theta$, $B_r$, $B_\theta$ y $p_t$ presentados en la Fig.\ref{fig:step_0000_PLUTO}. 
-\begin{figure}[ht]
+\begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{images/step_0000/panel.png}
   \caption{Estado inicial del toro ($t=0$), calculado por PLUTO.}
@@ -437,7 +456,24 @@ Según las definiciones del Cód.\ref{lst:pluto.ini}, la malla bidimensional se 
     \item \textbf{Partición radial ($\mathbf{r}$)}: Dos segmentos globales. El primero de estos abarca el intervalo $r \in [1, 11]$ con 320 celdas uniformes (separación constante $\Delta r$). El segundo segmento, $r \in [11, 20]$ cuenta con 72 celdas estiradas (la separación aumenta conforme recorremos el segmento). En total se tienen 392 celdas activas radiales, comprendiendo el intervalo global $r \in [1, 20]$.
     \item \textbf{Partición angular ($\mathbf{\theta}$)}: Tres segmentos globales. El primero define el intervalo $\theta \in [0, \pi/4]$ con 72 celdas estiradas. El siguiente comprende $\theta \in [\pi/4, 3\pi/4]$ con 256 celdas uniformes. Finalmente el tercer segmentos abarca los valores $\theta \in [3\pi/4, \pi]$ con 72 celdas estiradas. En total se trabajan 400 celdas activas angulares, dentro del intervalo $\theta \in [0, \pi]$.
 \end{itemize}
-Respecto a los parámetros físicos del sistema, podemos observar que el toro está definido por sus radios interior y exterior: $r_{\min} = 3$ y $r_{\max} = 4.7$. Adicionalmente tenemos la densidad de corte para el potencial vector $\rho_{\rm cut} = 0.5$, junto con el parámetro del plasma $\beta = 200$ y la razón entre densidades del toro y la atmósfera $\eta = 1\times10^{-4}$.  
+Respecto a los parámetros físicos del sistema, podemos observar que el toro está definido por sus radios interior $r_{\min} = 3$ y el radio de máxima densidad $r_{\max} = 4.7$. Adicionalmente tenemos la densidad de corte para el potencial vector $\rho_{\rm cut} = 0.5$, junto con el parámetro del plasma $\beta = 200$ y la razón entre densidades del toro y la atmósfera $\eta = 1\times10^{-4}$.  
+
+\medskip
+
+Con las ecuaciones del estado inicial se obtiene la distribución de densidad, observando que el toro tiene una forma elíptica en el plano $(r, \theta)$, extiéndose hacia alrededor de $r\approx10$. Siendo que la unidad de densidad es $\rho_{\max}$, $\rho = 1$ se obtiene a la distancia esperada de $4.7$, y la densidad atmosférica se mantiene estable alrededor de $\rho_a = 10^{-4}$, en concordancia con el valor de $\eta$.
+
+\medskip
+
+Además, las velocidades radial y angular se mantienen nulas en todo el dominio (aunque en estas imágenes el rango se ensancha de $-0.5$ a $0.5$), esto es lo esperado al haber definido un estado inicial sin movimiento poloidal. Sí hay, sin embargo, un desplazamiento toroidal como es posible observar en la variable $vx3 = v_{\phi}$, indicando una rotación mayor cerca al borde interior que en el exterior, mientras que la atmósfera se mantiene estacionaria.
+
+\medskip
+
+Los campos radial y angular $B_r$, $B_{\theta}$ están confinados a una región menor dentro del toro, debido a la densidad de corte $\rho_{\rm{cut}}$, mientras que el campo azimutal $B_{\phi}$ se encuentra en ceros debido a que el campo inicial nace únicamente de la componente toroidal del potencial vector $A_{\phi}$.
+
+\section{Reproducción por Python}
+
+Con el objetivo de reproducir los resultados de PLUTO a través del lenguaje de programación Python, se buscó realizar un seguimiento detallado de cada paso de solución encontrado en los archivos del código de PLUTO. Como se mencionó con anterioridad, se dividió el flujo de trabajo en varios pasos: creación de la malla, inicialización, condiciones de frontera y solución temporal.
+
 
 
 \begin{thebibliography}{99}
