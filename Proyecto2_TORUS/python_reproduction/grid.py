@@ -128,7 +128,7 @@ x3_celtype = ['u']
 x1_faces, x1_centers = grid(x1_stops, x1_ncel, x1_celtype)
 x2_faces, x2_centers = grid(x2_stops, x2_ncel, x2_celtype)
 
-print(f"\n Malla radial (x1) generada. Celdas totales: {len(x1_centers)}.\n Malla angular (x2) generada. Celdas totales: {len(x2_centers)}")
+print(f"\nMalla radial (x1) generada. Celdas totales: {len(x1_centers)}.\nMalla angular (x2) generada. Celdas totales: {len(x2_centers)}.")
 
 for faces, stops in [(x1_faces, x1_stops), (x2_faces, x2_stops)]:
     assert np.all(np.diff(faces) > 0)                     # monótona
