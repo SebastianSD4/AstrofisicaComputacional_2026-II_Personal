@@ -33,6 +33,8 @@
     \vspace{4pt}%
     \hrule height 0.4pt}}
 \captionsetup[figure]{format=ruledline, position=bottom}
+\captionsetup[subfigure]{format=plain}
+
 
 % --- CITACIONES ---
 \usepackage[super, sort&compress]{natbib}
@@ -118,7 +120,7 @@
 % BLOQUE DE ABSTRACT (EN LA COLUMNA IZQUIERDA CON ESPACIADO REDUCIDO)
 % ==============================================================================
 \noindent
-{\small\bfseries \textbf{Resumen}: El presente artículo expone los detalles pertinentes a la solución por medio del software de dinámica de plasmas astrofísicos PLUTO, para un toro en geometría esférica axisimétrica. Se discuten las particularidades del proceso de simulación desde el código original, incluyendo la física necesaria, el procedimiento numérico y los resultados obtenidos. Adicionalmente se realiza una reproducción de dicha simulación en el lenguaje Python, presentando posteriormente una comparación entre ambos conjuntos de resultados. \par}
+{\small\bfseries \textbf{Resumen}: El presente artículo expone los detalles pertinentes a la solución por medio del software de dinámica de plasmas astrofísicos PLUTO, para un toro en geometría esférica axisimétrica. Se discuten las particularidades del proceso de simulación desde el código original, incluyendo la física necesaria, el procedimiento numérico y los resultados obtenidos. Adicionalmente se realiza una reproducción de dicha simulación en el lenguaje Python, presentando posteriormente una comparación entre ambos conjuntos de resultados. Los resultados por Python se acomodan de manera satisfactoria a la simulación de PLUTO, encontrando que la mayor parte de las discrepancias se concentran en los bordes del toro y son posiblemente atribuibles a la mayor difusión de Rusanov. \par}
 
 \vspace{0.3em}
 \noindent\rule{\linewidth}{0.4pt}
@@ -155,10 +157,10 @@ Tomando un vistazo a algunos de los parámetros utilizados en la simulación por
 El marco físico principal correspondiente al problema escogido (\textit{Torus}) es aquel de la Magnetohidrodinámica (MHD) ideal (no se trabajarán con cantidades resistivas o aproximaciones relativistas en primera instancia). Según la documentación pertinente\cite{plutomanual}, el módulo MHD resuelve un sistema de ecuaciones de conservación de la forma:
 \begin{subequations}\label{eq:MHD}
     \begin{align}
-        \frac{\partial \rho}{\partial t} + \nabla \cdot (\rho v) &= 0 \\[5pt]
+        \frac{\partial \rho}{\partial t} + \nabla \cdot (\rho \mathbf{v}) &= 0 \\[5pt]
         \frac{\partial \mathbf{m}}{\partial t} + \nabla \cdot \left[ \mathbf{m}\mathbf{v} - \mathbf{BB} + \mathbf{I} \left(p + \frac{B^2}{2}\right) \right]^T &= -\rho \nabla \Phi + \rho \mathbf{g} \\[5pt]
-        \frac{\partial B}{\partial t} + \mathbf{\nabla} \times (c\mathbf{E}) &= 0 \\[5pt]
-        \frac{\partial (E_t + \rho \Phi)}{\partial t} + \mathbf{\nabla} \left[\left(   \frac{\rho v^2}{2} + \rho e + p + \rho \Phi\right)v + c\mathbf{E} \times \mathbf{B}\right] &= \mathbf{m} \cdot \mathbf{g} 
+        \frac{\partial \mathbf{B}}{\partial t} + \mathbf{\nabla} \times (c\mathbf{E}) &= 0 \\[5pt]
+        \frac{\partial (E_t + \rho \Phi)}{\partial t} + \mathbf{\nabla} \cdot \left[\left(   \frac{\rho v^2}{2} + \rho e + p + \rho \Phi\right)\mathbf{v} + c\mathbf{E} \times \mathbf{B}\right] &= \mathbf{m} \cdot \mathbf{g} 
     \end{align}    
 \end{subequations}
 En donde los parámetros corresponden a:
@@ -190,7 +192,7 @@ En este caso, el valor por defecto de $\gamma$ es $5/3$, siendo esto un gas mono
 
 \medskip
 
-El problema del toro es bidimensional en coordenadas esféricas, siendo las variables de interés $r$ y $\theta$, lo cual implica una simetría azimutal estricta respecto al eje polar (específicamente, $\partial / \partial \phi = 0$ y la variable $\phi$ es trivial en ese sentido). Intependientemente de esto, el número de componentes de todos los vectores trabajados seguirá siendo 3.
+El problema del toro es bidimensional en coordenadas esféricas, siendo las variables de interés $r$ y $\theta$, lo cual implica una simetría azimutal estricta respecto al eje polar (específicamente, $\partial / \partial \phi = 0$ y la variable $\phi$ es trivial en ese sentido). Independientemente de esto, el número de componentes de todos los vectores trabajados seguirá siendo 3.
 
 \medskip
 
@@ -202,9 +204,9 @@ Siendo $p = K\rho^{\gamma}$, $K$ la constante politrópica, $R$ el radio esféri
 \begin{align}\label{eq:equilibrium}
     -\frac{1}{R} + \frac{1}{2}\frac{L_k^2}{r^2} + \frac{\gamma}{\gamma-1}K\rho^{\gamma-1} = c = -\frac{1}{r_{\min}} + \frac{1}{2}\frac{L_k^2}{r_{\min}^2}
 \end{align}
-Siendo la constante $c$ determinada en la superficie de presión nula $\rho = 0$. Así, la ecuación Eq.\ref{eq:equilibrium} permite calcular el valor de $K$ en el punto donde la densidad sea máxima:
+Siendo la constante $c$ determinada en la superficie de presión nula $\rho = 0$. Así, la ecuación Ec.\ref{eq:equilibrium} permite calcular el valor de $K$ en el punto donde la densidad sea máxima:
 \begin{align}\label{eq:K_rhomax}
-    K = \frac{\gamma - 1}{\gamma} \left[c + \frac{1}{r_{\max}} - \frac{1}{2}\frac{L_k^2}{r_{\textbf{max}}^2}\right] \frac{1}{{\rho_{\textbf{max}}}^{\gamma -1}}
+    K = \frac{\gamma - 1}{\gamma} \left[c + \frac{1}{r_{\max}} - \frac{1}{2}\frac{L_k^2}{r_{\max}^2}\right] \frac{1}{{\rho_{\max}}^{\gamma -1}}
 \end{align}
 Con lo cual se obtiene la distribución completa de densidad $\rho(R, r)$ en todo el dominio:
 \begin{align}\label{eq:rho}
@@ -279,14 +281,14 @@ Por su parte, las componentes de la gravedad del cuerpo en coordenadas esférica
 \begin{align}\label{eq:gravforce}
     g_r = -\frac{GM}{r^2}, \quad g_{\theta} = g_{\phi} = 0
 \end{align}
-Finalmente, es posible describir momento angular $L = w m_{\phi}$ a partir de $m_{\phi}$ (siendo $w = r \sin{\theta}$ el radio cilíndrio). Esto se hace modificando la ecuación de evolución de $m_{\phi}$, obteniendo:
+Finalmente, es posible describir momento angular $L = w m_{\phi}$ a partir de $m_{\phi}$ (siendo $w = r \sin{\theta}$ el radio cilíndrico). Esto se hace modificando la ecuación de evolución de $m_{\phi}$, obteniendo:
 \begin{align}\label{eq:angmom_evol}
    \frac{\partial L}{\partial t} + \frac{1}{r^2}\frac{\partial\left(r^2 w T_{r\phi}\right)}{\partial r} + \frac{1}{r\sin{\theta}}\frac{\partial\left(\sin{\theta} w T_{\theta\phi}\right)}{\partial\theta} = 0, \qquad T_{a\phi} = \rho v_a v_{\phi} - B_a B_{\phi} 
 \end{align} 
 
 \subsection{Divergencia del campo magnético}
 
-Con tal de mantener el control de la condición de los monopolos magnéticos $\mathbf{\nabla \cdot B} = 0$ es posible utilizar una variedad de métodos numéricos. En vista de la definición \lstinline[language=C]{DIVB_CONTROL = CONSTRAINED_TRANSPORT} dentro del problema de interés, se establece el desarrollo del método de transporte constreñido (CT), algoritmo basado principalmente en la definición de un conjunto de campos magnéticos cuyas componentes se guardan en distintos puntos espaciales sobre las caras del volumen de integración (\textit{face-centered magnetic field}, $B^{(s)}$), como se muestra en la imagen \ref{fig:ConstrainedTranspor_1}.
+Con tal de mantener el control de la condición de los monopolos magnéticos $\mathbf{\nabla \cdot B} = 0$ es posible utilizar una variedad de métodos numéricos. En vista de la definición \lstinline[language=C]{DIVB_CONTROL = CONSTRAINED_TRANSPORT} dentro del problema de interés, se establece el desarrollo del método de transporte constreñido (CT), algoritmo basado principalmente en la definición de un conjunto de campos magnéticos cuyas componentes se guardan en distintos puntos espaciales sobre las caras del volumen de integración (\textit{face-centered magnetic field}, $B^{(s)}$), como se muestra en la Fig.\ref{fig:ConstrainedTranspor_1}.
 \begin{figure}
     \centering
     \includegraphics[width=0.8\linewidth]{images/ConstrainedTransports_img1.png}
@@ -316,7 +318,7 @@ El método de transporte constreñido asegura una condición solenoidal mantenid
 \subsection{Condiciones de frontera}
 
 Observando el bloque de condiciones de frontera dentro del archivo \lstinline[language=C]{pluto_03.ini}.
-\begin{lstlisting}[language=C, caption={Definiciones de condiciones de frontera (pluto\_03.init)}, label={lst:ini_boundary}]
+\begin{lstlisting}[language=C, caption={Definiciones de condiciones de frontera (pluto\_03.ini)}, label={lst:ini_boundary}]
 [Boundary]
 
 X1-beg        userdef
@@ -327,8 +329,8 @@ X3-beg        outflow
 X3-end        outflow
 \end{lstlisting}
 
-\subsubsection{\texorpdfstring{Frontera angular ($1 \leq r \leq 20$)}
-  {Frontera angular (1 <= r <= 20)}}
+\subsubsection{\texorpdfstring{Frontera radial ($1 \leq r \leq 20$)}
+  {Frontera radial (1 <= r <= 20)}}
 
 La condición \lstinline[language=C]{userdef} para la frontera interna de $r$ (\lstinline[language=C]{X1_BEG}) establece el uso de la función \lstinline[language=C]{UserDefBoundary} dentro del archivo \lstinline[language=C]{init.c} de la manera descrita en Cód.\ref{lst:userdefboundary}.
 \begin{lstlisting}[language=C, caption={Definición de condición en la frontera radial interna.}, label={lst:userdefboundary}]
@@ -366,7 +368,7 @@ void UserDefBoundary (const Data *d, RBox *box, int side, Grid *grid)
 }
 
 \end{lstlisting}
-En este caso, la frontera radial interna puede representar la superficie o vecindad del objeto central masivo que atrae al toroide. El código Cód.\ref{lst:userdefboundary} define una condición de salida libre (\textit{outflow}), copiando el valor de la primera celda activa hacia las celdas exteriores de la frontera ---visto en \lstinline[language=C]{d->Vc[nv][k][j][i] = d->Vc[nv][k][j][IBEG]}--- generando un gradiente nulo y permitiendo que las propiedades del plasma fluyan hacia afuera sin resistencia. Adicionalmente, \lstinline[language=C]{d->Vc[VX1][k][j][i] = MIN(d->Vc[VX1][k][j][i],0.0)} fuerza que la velocidad en la frontera radial sea siempre negativa o cero, de forma que el material del toroide caida hacia el objeto central y prohibiendo que material entre desde la frontera fantasma hacia el dominio de trabajo (esto evita la inyección espuria de masa desde el origen).
+En este caso, la frontera radial interna puede representar la superficie o vecindad del objeto central masivo que atrae al toroide. El código Cód.\ref{lst:userdefboundary} define una condición de salida libre (\textit{outflow}), copiando el valor de la primera celda activa hacia las celdas exteriores de la frontera ---visto en \lstinline[language=C]{d->Vc[nv][k][j][i] = d->Vc[nv][k][j][IBEG]}--- generando un gradiente nulo y permitiendo que las propiedades del plasma fluyan hacia afuera sin resistencia. Adicionalmente, \lstinline[language=C]{d->Vc[VX1][k][j][i] = MIN(d->Vc[VX1][k][j][i],0.0)} fuerza que la velocidad en la frontera radial sea siempre negativa o cero, de forma que el material del toroide caiga hacia el objeto central y prohibiendo que material entre desde la frontera fantasma hacia el dominio de trabajo (esto evita la inyección espuria de masa desde el origen).
 
 \medskip
 
@@ -378,7 +380,7 @@ La condición \lstinline[language=C]{outflow} en la frontera externa de $r$ esta
 \begin{align*}
     q_{N + k} = q_N \quad k = 1, \ldots, n_g 
 \end{align*}
-Esto implica que el plasma fluye hacia el exterior del dominio de trabajo sin experimentar cambios drásticos, evitando relfexiones espurias.
+Esto implica que el plasma fluye hacia el exterior del dominio de trabajo sin experimentar cambios drásticos, evitando reflexiones espurias.
 
 \subsubsection{\texorpdfstring{Frontera angular ($0 \leq \theta \leq \pi$)}
   {Frontera angular (0 <= theta <= pi)}}
@@ -406,19 +408,19 @@ Siendo $axis$ la dirección paralela al eje de simetría de las coordenadas ($r$
 
 \subsection{Estado del arte}
 
-Papaloizou y Pringe\cite{Papaloizou} estudiaron en 1984 la estabilidad dinámica de toros con un momento angular específico constante (rotación prescrita), mostrando que son inestables en modos azimutales de bajo orden que evolucionan dentro de escalas de tiempo dinámicas. Este comportamiento se denominó \textit{inestabilidad de Papaloizou-Pringle} (PP) y posteriormente se atribuyó a las interacciones entre ondas en los bordes interno y externo del toro (Goldreich y Goodman, 1986)\cite{Goldreich}.
+Papaloizou y Pringle\cite{Papaloizou} estudiaron en 1984 la estabilidad dinámica de toros con un momento angular específico constante (rotación prescrita), mostrando que son inestables en modos azimutales de bajo orden que evolucionan dentro de escalas de tiempo dinámicas. Este comportamiento se denominó \textit{inestabilidad de Papaloizou-Pringle} (PP) y posteriormente se atribuyó a las interacciones entre ondas en los bordes interno y externo del toro (Goldreich y Goodman, 1986)\cite{Goldreich}.
 
 \medskip
 
-Hawley (2000)\cite{Hawley} estudia un número de simulaciones magnetohidrodinámicas globales y tridimensionales de toros con un campo magnético poloidad ($B_\theta$) débil, encontrando que la inestabilidad magnetorrotacional (MRI estudiada en 1991 por Balbus y Hawley)\cite{HawleyMRI} produce turbulencia y transporte exterior de momento angular, permitiendo la acreción. Permite definir la configuración del toro a partir del potencial vector $A_\phi = B_0(\rho - \rho_{\rm cut})$ y $\beta$ alto.
+Hawley (2000)\cite{Hawley} estudia un número de simulaciones magnetohidrodinámicas globales y tridimensionales de toros con un campo magnético poloidal ($B_\theta$) débil, encontrando que la inestabilidad magnetorrotacional (MRI estudiada en 1991 por Balbus y Hawley)\cite{HawleyMRI} produce turbulencia y transporte exterior de momento angular, permitiendo la acreción. Permite definir la configuración del toro a partir del potencial vector $A_\phi = B_0(\rho - \rho_{\rm cut})$ y $\beta$ alto.
 
 \medskip
 
-Kuwabara, Shibata, Kudoh y Matsumoto (2005)\cite{Kuwabara} realizaron estudios pertinentes al mecanismo de aceleración de jets magnetohidrodinámicos resistivos por medio de simulaciones axisimétricas en sistemas MHD no lineales. Describen la ecuación de equilibrio del toro para el caso de momento angular constante ($a = 0$) presentada en la Eq.\ref{eq:equilibrium}. 
+Kuwabara, Shibata, Kudoh y Matsumoto (2005)\cite{Kuwabara} realizaron estudios pertinentes al mecanismo de aceleración de jets magnetohidrodinámicos resistivos por medio de simulaciones axisimétricas en sistemas MHD no lineales. Describen la ecuación de equilibrio del toro para el caso de momento angular constante ($a = 0$) presentada en la Ec.\ref{eq:equilibrium}. 
 
 \medskip
 
-Estos trabajos ofrecen avances fundamentales para el desarrollo de este trabajo, describiendo el comportamiento del toro en las condiciones adecuadas y determinando los campos de estudio por fuera del alcance del mismo. Papaloizou y Pringe introducen la idea de una inestabilidad en modos azimutales de momento angular constante, caso no estudiado durante el desarrollo principal del presente informe. Hawley establece la existencia de una inestabilidad adicional relacionada al campo magnético mientras que Kuwabara y compañía presentan el equilibrio en dos dimensiones.
+Estos trabajos ofrecen avances fundamentales para el desarrollo de este trabajo, describiendo el comportamiento del toro en las condiciones adecuadas y determinando los campos de estudio por fuera del alcance del mismo. Papaloizou y Pringle introducen la idea de una inestabilidad en modos azimutales de momento angular constante, caso no estudiado durante el desarrollo principal del presente informe. Hawley establece la existencia de una inestabilidad adicional relacionada al campo magnético mientras que Kuwabara y compañía presentan el equilibrio en dos dimensiones.
 
 \section{Metodología}
 
@@ -434,13 +436,20 @@ Una vez conseguidos los resultados de la simulación se realiza un intento de re
 
 \section{Simulación PLUTO}
 
-Utilizando las configuraciones definidas en los archivos \lstinline[language=C]{definitions_03.h} y \lstinline[language=C]{pluto_03.ini} es posible obtener los gráficos para el comportamiento espacial de las variables de interés; $\rho$, $v_r$, $v_\theta$, $B_r$, $B_\theta$ y $p_t$ presentados en la Fig.\ref{fig:step_0000_PLUTO}. 
-\begin{figure}[H]
+Utilizando las configuraciones definidas en los archivos \lstinline[language=C]{definitions_03.h} y \lstinline[language=C]{pluto_03.ini} es posible obtener los gráficos para el comportamiento espacial de las variables de interés; $\rho$, $v_r$, $v_\theta$, $B_r$, $B_\theta$ y $p_t$ presentados en las Figs.\ref{fig:step_0000_PLUTO} y \ref{fig:step_0002_PLUTO}. 
+\begin{figure}[htbp]
   \centering
   \includegraphics[width=\textwidth]{images/step_0000/panel.png}
   \caption{Estado inicial del toro ($t=0$), calculado por PLUTO.}
   \label{fig:step_0000_PLUTO}
 \end{figure}
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{images/step_stop/panel.png}
+    \caption{Estado del toro calculado por PLUTO para $t=10$.}
+    \label{fig:step_0002_PLUTO}
+\end{figure}
+
 Para esto se utilizaron las siguientes configuraciones, guardadas en \lstinline[language=C]{pluto.ini}:
 \begin{lstlisting}[language=C, caption={Parámetros de grilla, tiempo y solucionador para simulación del toro por PLUTO}, label={lst:pluto.ini}]
 [Grid]
@@ -453,12 +462,28 @@ X3-grid   1   0.0    1 u   1.0
 
 CFL              0.4
 CFL_max_var      1.1
-tstop            5.0
+tstop            100.0
 first_dt         1.e-4
 
 [Solver]
 
 Solver         hlld
+
+// ...
+
+[Uniform Grid Output]
+
+uservar   0
+dbl       5.0   -1   single_file
+flt       -10.0 -2   single_file
+vtk       -1.0  -1   single_file
+tab       -10.0 -1   
+ppm       -1.0  -1   
+png       -1.0  -1   
+log       10 
+analysis  -1.0  -1 
+  
+// ...
 
 [Parameters]
 
@@ -474,11 +499,11 @@ Según las definiciones del Cód.\ref{lst:pluto.ini}, la malla bidimensional se 
     \item \textbf{Partición radial ($\mathbf{r}$)}: Dos segmentos globales. El primero de estos abarca el intervalo $r \in [1, 11]$ con 320 celdas uniformes (separación constante $\Delta r$). El segundo segmento, $r \in [11, 20]$ cuenta con 72 celdas estiradas (la separación aumenta conforme recorremos el segmento). En total se tienen 392 celdas activas radiales, comprendiendo el intervalo global $r \in [1, 20]$.
     \item \textbf{Partición angular ($\mathbf{\theta}$)}: Tres segmentos globales. El primero define el intervalo $\theta \in [0, \pi/4]$ con 72 celdas estiradas. El siguiente comprende $\theta \in [\pi/4, 3\pi/4]$ con 256 celdas uniformes. Finalmente el tercer segmentos abarca los valores $\theta \in [3\pi/4, \pi]$ con 72 celdas estiradas. En total se trabajan 400 celdas activas angulares, dentro del intervalo $\theta \in [0, \pi]$.
 \end{itemize}
-Respecto a los parámetros físicos del sistema, podemos observar que el toro está definido por sus radios interior $r_{\min} = 3$ y el radio de máxima densidad $r_{\max} = 4.7$. Adicionalmente tenemos la densidad de corte para el potencial vector $\rho_{\rm cut} = 0.5$, junto con el parámetro del plasma $\beta = 200$ y la razón entre densidades del toro y la atmósfera $\eta = 1\times10^{-4}$.  
+Respecto a los parámetros físicos del sistema, podemos observar que el toro está definido por sus radios interior $r_{\min} = 3$ y el radio de máxima densidad $r_{\max} = 4.7$. Adicionalmente tenemos la densidad de corte para el potencial vector $\rho_{\rm cut} = 0.5$, junto con el parámetro del plasma $\beta = 200$ y la razón entre densidades del toro y la atmósfera $\eta = 1\times10^{-4}$. Adicionalmente, \lstinline[language=C]|SCALE_HEIGHT| fija el valor de la velocidad del sonido isotérmica $a^2$.
 
 \medskip
 
-Con las ecuaciones del estado inicial se obtiene la distribución de densidad, observando que el toro tiene una forma elíptica en el plano $(r, \theta)$, extiéndose hacia alrededor de $r\approx10$. Siendo que la unidad de densidad es $\rho_{\max}$, $\rho = 1$ se obtiene a la distancia esperada de $4.7$, y la densidad atmosférica se mantiene estable alrededor de $\rho_a = 10^{-4}$, en concordancia con el valor de $\eta$.
+Con las ecuaciones del estado inicial se obtiene la distribución de densidad, observando que el toro tiene una forma elíptica en el plano $(r, \theta)$, extendiéndose hacia alrededor de $r\approx10$. Siendo que la unidad de densidad es $\rho_{\max}$, $\rho = 1$ se obtiene a la distancia esperada de $4.7$, y la densidad atmosférica se mantiene estable alrededor de $\rho_a = 10^{-4}$, en concordancia con el valor de $\eta$.
 
 \medskip
 
@@ -490,12 +515,13 @@ Los campos radial y angular $B_r$, $B_{\theta}$ están confinados a una región 
 
 \section{Reproducción por Python}
 
+
 Con el objetivo de reproducir los resultados de PLUTO a través del lenguaje de programación Python, se buscó realizar un seguimiento detallado de cada paso de solución encontrado en los archivos del código de PLUTO. Como se mencionó con anterioridad, se dividió el flujo de trabajo en varios pasos: creación de la malla, inicialización, condiciones de frontera y solución temporal.
 
 \medskip
 
 El método de solución escogido utiliza las ecuaciones de la MHD ideal, en coordenadas esféricas axisimétricas dentro de volúmenes finitos. En específico, se hace uso del flujo de Rusanov, el método de Transporte Constreñido (CT) para asegurar la divergencia nula del campo magnético y un avance temporal basado en el método de Runge-Kutta de segundo orden. El flujo general del solucionador se puede describir de la forma presentada en Cod.\ref{cod:solver_workflow}
-\begin{lstlisting}[language=C, caption={Flujo de trabajo general para el solucionador implementado}, label={cod:solver_workflow}]
+\begin{lstlisting}[language=C, caption={Flujo de trabajo general para el solucionador implementado.}, label={cod:solver_workflow}]
 main
 |_ Mesh.__init__               // geometría esférica
 |_ initial_state               // init.init, init.init_B, init.pad_state
@@ -517,16 +543,207 @@ Dentro de los volúmenes finitos, es posible actualizar los valores de las varia
 \end{align}
 Con $F$ el flujo de la variable a través de las caras radiales, y $G$ a través de las angulares. Siendo $S$ la suma de las fuentes y $A$, $V$ las áreas y volúmenes de las celdas.
 \begin{align}\label{eq:areas_vol}
-    A_{ij}^r = r_i ^2 (\cos{\theta_j} - \cos{\theta_{j+1}}), \quad A_{ij} ^{\theta} = \sin{\theta_j} \frac{r_{i+1}^2 - r_i ^2}{2}, \quad V_ij = \frac{r_{i+1}^3 - r_i ^3}{3}(\cos{\theta_j} - \cos{\theta_{j+1}})
+    A_{ij}^r = r_i ^2 (\cos{\theta_j} - \cos{\theta_{j+1}}), \quad A_{ij} ^{\theta} = \sin{\theta_j} \frac{r_{i+1}^2 - r_i ^2}{2}, \quad V_{ij} = \frac{r_{i+1}^3 - r_i ^3}{3}(\cos{\theta_j} - \cos{\theta_{j+1}})
 \end{align}
 Adicionalmente es necesario definir el flujo numérico de Rusanov en términos de las caras de las celdas, como
 \begin{align}\label{eq:rusanov}
     \hat{F} = \frac{1}{2}(F_L + F_R) - \frac{1}{2}S(U_R - U_L), \qquad S = \max(|v_n|_L + c_{f,L}, |v_n|_R + c_{f,R})
 \end{align}
-Esto permite manejar las discontinuidades de los estados laterales utilizando la velocidad magnetosónica rápidca $c_f$ en la dirección normal, con $S$ la máxima velocidad de la señal local:
+Esto permite manejar las discontinuidades de los estados laterales utilizando la velocidad magnetosónica rápida $c_f$ en la dirección normal, con $S$ la máxima velocidad de la señal local:
 \begin{align}\label{eq:cf}
     c_f ^2 = \frac{1}{2}[a^2 + b^2 + \sqrt{(a^2 + b^2)^2 - 4a^2 b_n ^2}], \qquad a^2 = \frac{\gamma p}{\rho}, \quad b^2 = \frac{B^2}{\rho}, b_n ^2 = \frac{B_n ^2}{\rho}
 \end{align}
+
+\subsection{Malla, inicialización y condiciones de frontera}
+
+La malla se genera en \lstinline[language=C]|grid.py|, reproduciendo los segmentos uniformes ($u$) y estirados ($s$) definidos en \lstinline[language=C]|pluto.ini|. La razón de estiramiento $\alpha$ de cada segmento estirado se obtiene resolviendo mediante Newton-Raphson la condición $\Delta x (\alpha + \alpha^2 + \dots + \alpha^N) = L$ tomando $\Delta x$ de la celda uniforme adyacente. Como se esperaba, se obtienen $392\times400$ celdas activas, a las cuales se añaden $n_g = 2$ celdas fantasma a cada lado.
+
+\medskip
+
+Dentro de \lstinline[language=C]|init.py| se evalúan en los centros de cada celda la densidad del toro (Ec.\ref{eq:rho}), la atmósfera hidrostática (Ec.\ref{eq:hydrostaticbalance}), la velocidad $v_{\phi} = L_k / w$ y el trazador $tr1$ utilizando la misma máscara que PLUTO definida con anterioridad. Así mismo, se inicializa el campo magnético a partir del potencial $A_{\phi}$ en los vértices de la malla a partir del teorema de Stokes:
+\begin{align}\label{eq:B_stokes}
+    B^{(s)}_{r,\,i,j} = \frac{\sin\theta_{j+1}A_{i,j+1} - \sin\theta_{j}A_{i,j}}{r_i\,(\cos\theta_j - \cos\theta_{j+1})}, \qquad
+    B^{(s)}_{\theta,\,i,j} = -\frac{r_{i+1}A_{i+1,j} - r_{i}A_{i,j}}{\tfrac{1}{2}\left(r_{i+1}^2 - r_i^2\right)}
+\end{align}
+El campo en los centros es luego obtenido promediando su valor en las caras opuestas, asegurando que el flujo magnético total por celda sea del orden de $10^{-17}$.  
+
+\medskip
+
+Finalmente, las condiciones de frontera dentro de \lstinline[language=C]|init.py| siguen las descripciones proporcionadas en secciones anteriores. En la frontera radial interna se copia la primera celda activa, y se impone $v_r = \min(v_r, 0)$; en la externa se aplica un gradiente nulo. En los polos se define una reflexión con inversión de signo de las cantidades en $\theta$ y $\phi$. Por otro lado, los campos son tales que $B_{\theta}$ en las caras se anula en los polos y se refleja de forma antisimétrica, mientras que $B_r$ se refleja de forma simétrica y en toda celda fantasma radial $B_r$ se despeja de la condición solenoidal, tal que se mantenga una divergencia nula.
+
+\subsection{Reconstrucción, flujos y fuentes}
+
+Las variables primitivas se reconstruyen en las caras con una interpolación lineal apoyada del limitador de van Leer (media armónica entre pendientes), respetando el estiramiento entre celdas. Con estos estados laterales se calcula el flujo de Rusanov (Ec.\ref{eq:rusanov}) en cada dirección. Las fuentes geométricas y gravitacionales corresponden a las Ecs.\ref{eq:momento_2D_esferico} y \ref{eq:gravforce}. Finalmente, se evoluciona el momento angular $L = w\,m_{\phi}$ en forma conservativa (Ec.\ref{eq:angmom_evol}), y $B_{\phi}$ y el trazador $\rho Q$ en forma de flujo.
+
+\subsection{Transporte constreñido y avance temporal}
+
+A partir del campo eléctrico azimutal en las aristas se calculan las componentes radial y angular del campo magnético con el teorema de Stokes implementado como el promedio aritmético de los cuatro flujos adyacentes, en vista de \lstinline[language=C]|CT_EMF_AVERAGE = ARITHMETIC|:
+\begin{align}\label{eq:CT_update}
+    \frac{dB^{(s)}_{r,\,i,j}}{dt} = -\frac{r_i\left(\sin\theta_{j+1}E_{\phi,i,j+1} - \sin\theta_{j}E_{\phi,i,j}\right)}{A^r_{i,j}}, \qquad
+    \frac{dB^{(s)}_{\theta,\,i,j}}{dt} = \frac{\sin\theta_j\left(r_{i+1}E_{\phi,i+1,j} - r_{i}E_{\phi,i,j}\right)}{A^\theta_{i,j}}
+\end{align}
+Por su lado, el avance temporal utiliza Runge-Kutta de segundo orden con $\rm{CFL}=0.4$, estableciendo un aumento del tamaño de paso temporal entre pasos consecutivos no mayor a $1.1$. El paso es calculado a partir de la velocidad magnetosónica rápida $c_f$ de ambas direcciones.
+
+\section{Resultados y comparación}
+
+Se realiza una comparación entre las salidas disponibles de ambos códigos en los pasos de tiempo $t=0$, $t=5$ y $t=10$. Si bien la simulación por PLUTO llegó hasta $t=100$, la solución de Python sólo se extiende hasta $t=10$, por lo cual el análisis no permite afirmar nada substancial respecto a la evolución a largo plazo. Las diferencias se midieron utilizando las normas relativas $L1$ y $L2$, errores ponderados por el volumen de cada celda:
+\begin{align}\label{eq:normas}
+    L_1 = \frac{\sum_{ij} V_{ij}\,|a_{ij} - b_{ij}|}{\sum_{ij} V_{ij}\,|b_{ij}|}, \qquad
+    L_2 = \sqrt{\frac{\sum_{ij} V_{ij}\,(a_{ij} - b_{ij})^2}{\sum_{ij} V_{ij}\,b_{ij}^2}}
+\end{align}
+Este cálculo se realizó dentro del toro y extendido al dominio entero.
+
+\subsection{Estado inicial}
+En $t=0$ ambas soluciones coinciden con alta precisión. Las variables $\rho$, $p$ y $v_{\phi}$ difieren en alrededor de $10^{-5}$, mientras que $v_r$, $v_{\theta}$ y $B_{\phi}$ coinciden a orden de error de redondeo. Para el resto, el error relativo es considerablemente pequeño.
+
+\medskip
+
+En el dominio completo, $L_1 \approx 10^{-5}$ para $\rho$ y $p$ (Fig.\ref{fig:norms}). El campo $B_r$ difiere en $\approx 10^{-5}$, alrededor del $0.1\%$ de su amplitud, y esa diferencia se localiza en el borde del toro (Fig.\ref{fig:maps_B}). Una posible causa que no se ha verificado, podría encontrarse en el modo en que cada código evalúa $A_{\phi}$ en el borde del corte $\rho_{\rm cut}$ y centra el campo en las celdas. Aún así, la inicialización es correcta, y las diferencias posteriores se deben al esquema numérico y no a las condiciones iniciales.
+
+\subsection{Evolución de la densidad y la presión}
+
+La Fig.\ref{fig:cuts_rho} muestra cortes de $\rho$ en el plano ecuatorial y a $r = 4.7$, en escala logarítmica para ver también la atmósfera. En $t=0$ las curvas son indistinguibles. En $t=5$ y $t=10$ el interior del toro, el máximo y la atmósfera siguen coincidiendo, pero los bordes en $r\approx3$ y $r\approx9.7$ y en $\theta \approx 1.1$ y $\theta\approx2.05$ aparecen más suaves en la solución de Python, mientras que PLUTO conserva un escalón casi vertical. El mapa de presión de la Fig.\ref{fig:maps_rhoprs_0002} muestra lo mismo: la diferencia es prácticamente nula en el interior del toro y en la atmósfera, y se concentra en un anillo delgado sobre la frontera del toro, con una amplitud máxima de $\approx 6 \times 10^{-5}$ en $t=10$, cerca del $0.5\%$ del máximo de $p$.
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}{0.9\linewidth}
+    \includegraphics[width=\linewidth]{images/cuts/cut_rho_0000.png}
+    \caption{$t=0$}
+  \end{subfigure}
+  \begin{subfigure}{0.9\linewidth}
+    \includegraphics[width=\linewidth]{images/cuts/cut_rho_0001.png}
+    \caption{$t=5$}
+  \end{subfigure}
+  \begin{subfigure}{0.9\linewidth}
+    \includegraphics[width=\linewidth]{images/cuts/cut_rho_0002.png}
+    \caption{$t=10$}
+  \end{subfigure}
+  \caption{Cortes de $\rho$ en el plano ecuatorial (izquierda) y a $r=4.7$ (derecha), en escala logarítmica. Python (línea continua) y PLUTO (línea discontinua).}
+  \label{fig:cuts_rho}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}{\textwidth}
+    \includegraphics[width=\textwidth]{images/maps/map_rho_0002.png}
+  \end{subfigure}
+  \begin{subfigure}{\textwidth}
+    \includegraphics[width=\textwidth]{images/maps/map_prs_0002.png}
+  \end{subfigure}
+  \caption{Densidad (superior) y presión (inferior) en $\log_{10}$ en el tiempo $t=10$ para Python, PLUTO y su diferencia.}
+  \label{fig:maps_rhoprs_0002}
+\end{figure}
+
+\subsection{Normas de error}
+
+La Fig.\ref{fig:norms} muestra las normas en todo el dominio y aquellas restringidas al toro, mientras que la Tabla~\ref{tab:normas} resume los valores en el toro (los cuales son leídos desde las gráficas, siendo aproximaciones).
+
+\begin{figure}[htbp]
+    \centering
+    \begin{subfigure}{\textwidth}
+        \includegraphics[width=0.9\linewidth]{images/norms/norms_all.png}
+        % \label{fig:norms_all}
+        % \caption{Errores relativos en el dominio entero.}
+    \end{subfigure}
+    \begin{subfigure}{\textwidth}
+        \includegraphics[width=0.9\linewidth]{images/norms/norms_torus.png}
+        % \label{fig:norms_torus}
+        % \caption{Errores relativos en el toro.}
+    \end{subfigure}
+    \caption{Errores relativos en el dominio entero (superior) y en el toro (inferior).}
+    \label{fig:norms}
+\end{figure}
+
+Es posible obtener una lectura de los errores en los otros tiempos:
+\begin{table}[htbp]
+  \centering
+  \caption{Normas relativas en el toro (valores aproximados leídos de la Fig.\ref{fig:norms}).}
+  \label{tab:normas}
+  \begin{tabular}{lcccc}
+    \toprule
+    Variable & $L_1$ ($t=5$) & $L_1$ ($t=10$) & $L_2$ ($t=5$) & $L_2$ ($t=10$) \\
+    \midrule
+    $\rho$                     & $3\times10^{-3}$ & $3\times10^{-3}$ & $10^{-2}$        & $10^{-2}$ \\
+    $p$                        & $3\times10^{-4}$ & $5\times10^{-4}$ & $7\times10^{-4}$ & $10^{-3}$ \\
+    $v_\phi$                   & $10^{-4}$        & $2\times10^{-4}$ & $6\times10^{-4}$ & $9\times10^{-4}$ \\
+    $B_r,\, B_\theta,\, B_\phi$ & $(3\text{--}5)\times10^{-2}$ & $(3\text{--}5)\times10^{-2}$ & $\approx0.1$ & $\approx0.1$ \\
+    Trazador                   & $3\times10^{-5}$ & $3\times10^{-5}$ & $3\times10^{-4}$ & $3\times10^{-4}$ \\
+    $v_r,\, v_\theta$ (sin normalizar) & $\approx0.5$ & $\approx0.5$ & $\approx0.8$ & $\approx0.8$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Se observa que el error crece entre $t=0$ y $t=5$ y se mantiene relativamente estable entre $t=5$ y $t=10$ en todas las variables. Con sólo tres salidas no es posible llegar a la conclusión que el error esté convergiendo a algún valor, solo es posible indicar que no crece de forma apreciable después del primer intervalo. Además de esto las variables termodinámicas y $v_{\phi}$ concuerdan a un orden de $10^{-4}$--$10^{-2}$ dentro del toro. Sin embargo, el campo magnético y las velocidades poloidales cuentan con la mayor discrepancia relativa.
+
+\medskip
+
+Las normas del dominio completo y las del toro difieren de manera notable en algunas variables, y esa diferencia es informativa. Por ejemplo, el trazador pasa de $\approx0.1$ en el dominio completo a $\approx3\times10^{-5}$ en el toro. Esto ocurre porque el trazador vale 1 dentro del toro y 0 fuera, y el error se concentra en las celdas del borde difuminado, que la máscara de PLUTO (con su borde nítido) deja afuera en gran parte. Por lo tanto, ambas cifras son correctas, pero miden cosas distintas: las normas del toro cuantifican la física del interior, y las del dominio completo incluyen el efecto de la difusión en el borde.
+
+\subsection{Campo magnético}
+
+Para $B_r$, $B_{\theta}$ y $B_{\phi}$ la norma $L_2$ en el toro es de $\approx0.1$ en $t=5$ y $t=10$ (Fig.\ref{fig:norms}). Es más alta que para $\rho$ o $p$, pero hay que tener en cuenta que el campo es débil ($\beta=200$) y su amplitud máxima es de $\approx10^{-2}$, de modo que pequeñas diferencias absolutas pesan más en la norma relativa. El mapa de $B_\theta$ en $t=10$ (Fig.\ref{fig:maps_B}) muestra que la estructura global del campo es la misma en ambos códigos y que la diferencia se concentra en un anillo delgado en el borde del toro y en su zona interna ($r\approx3.5$--$4$), donde llega a $\approx3\times10^{-3}$, cerca del $30\%$ de la amplitud máxima. La causa más probable, aunque no se ha comprobado de forma independiente, es la misma difusión numérica del borde: como el campo está anclado a la distribución de densidad, un borde más suave modifica el campo en esa franja.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}{\textwidth}
+    \includegraphics[width=\linewidth]{images/maps/map_Bx1_0000.png}
+    \caption{Campo radial $B_r$ inicial, en $t=0$.}
+  \end{subfigure}
+  \begin{subfigure}{\textwidth}
+    \includegraphics[width=\linewidth]{images/maps/map_Bx2_0002.png}
+    \caption{Campo angular $B_\theta$ en el tiempo $t=10$.}
+  \end{subfigure}
+  \caption{Componentes poloidales del campo magnético en Python, PLUTO y su diferencia.}
+  \label{fig:maps_B}
+\end{figure}
+
+\subsection{Velocidad}
+
+La velocidad azimutal concuerda de forma satisfactoria según se observa en Fig.\ref{fig:maps_vx3}, observando nuevamente discrepancias en los bordes del toro.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}{\textwidth}
+    \includegraphics[width=\linewidth]{images/maps/map_vx3_0000.png}
+    % \caption{Velocidad azimutal $v_{\phi}$ inicial, en $t=0$.}
+  \end{subfigure}
+  \begin{subfigure}{\textwidth}
+    \includegraphics[width=\linewidth]{images/maps/map_vx3_0002.png}
+    % \caption{Velocidad azimutal $v_{\phi}$ en el tiempo $t=10$.}
+  \end{subfigure}
+  \caption{Velocidades azimutales inicial (superior) y final (inferior) en Python, PLUTO y su diferencia.}
+  \label{fig:maps_vx3}
+\end{figure}
+
+Por otro lado, las componentes poloidales de la velocidad muestran normas relativas alrededor de la unidad (según la Tabla~\ref{tab:normas}). Es necesario recalcar que esta cifra puede resultar engañosa, debido a que dentro del toro las velocidades son considerablemente bajas (el máximo es $0.016$ en PLUTO frente a $0.0047$ en Python), por lo que la norma relativa ---que divide entre esta amplitud--- aumenta. Esto se puede evidenciar al comparar los errores con estas amplitudes, por ejemplo diferencia absoluta máxima es de $\approx0.013$, correspondiente a $\approx2\%$ de la velocidad de rotación, por lo cual la discrepancia es pequeña al tomar en cuenta la escala trabajada.
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}{\textwidth}
+    \includegraphics[width=\linewidth]{images/maps/map_vx1_0002.png}
+    \caption{Velocidad radial $v_r$ en $t=10$.}
+  \end{subfigure}
+  \begin{subfigure}{\textwidth}
+    \includegraphics[width=\linewidth]{images/maps/map_vx2_0002.png}
+    \caption{Velocidad angular $v_\theta$ en $t=10$.}
+  \end{subfigure}
+  \caption{Componentes poloidales de la velocidad en $t=10$ para Python, PLUTO y su diferencia.}
+  \label{fig:maps_vpol}
+\end{figure}
+Se observa que el máximo global de la rapidez radial $|v_r|$ en $t=10$ no se encuentra dentro del toro sino en la atmósfera, específicamente en la celda radial $r \approx 1.016$, valiendo $\approx 0.27$ en PLUTO y $\approx 0.26$ en Python. Esto puede explicarse como un movimiento o flujo de caída hacia el objeto central, que se propaga hacia afuera en bandas.
+\subsection{Fuentes de discrepancia}
+
+Dentro de las posibles justificaciones para las discrepancias discutidas entre métodos, se pueden resaltar las siguientes:
+
+\begin{itemize}
+    \item \textbf{Solucionador de Riemann.} Rusanov usa una única velocidad de señal y no distingue las ondas intermedias (contacto, Alfvén), por lo que difunde más que HLLD. Es la causa más probable del borde más suave del toro en los cortes de $\rho$ y de las diferencias que se concentran allí en $p$ y $\mathbf{B}$. Nótese que el borde del toro es esencialmente una discontinuidad de contacto en equilibrio de presión.
+    \item \textbf{Reconstrucción y geometría.} Ambos códigos usan reconstrucción lineal con limitador de van Leer, pero PLUTO emplea fórmulas de reconstrucción específicas para coordenadas curvilíneas y mallas no uniformes, que no se han replicado.
+    \item \textbf{Fronteras y pisos.} Los pisos $\rho_{\min}$ y $p_{\min}$ del solver y los mecanismos de seguridad de PLUTO actúan en la atmósfera, de baja densidad, y pueden alterar las velocidades allí.
+    \item \textbf{Salidas y máscara.} La definición del toro con el borde nítido de PLUTO excluye la zona de mayor discrepancia y subestima el error cerca del borde.
+\end{itemize}
+
+\subsection{Limitaciones y trabajo pendiente}
+
+Los resultados cubren solo $t\le10$ de los $t=100$ simulados en PLUTO, y no se ha hecho un estudio de convergencia en resolución. Para confirmar que la mayor parte de la discrepancia proviene del solucionador de Riemann, se propone ejecutar PLUTO con \lstinline|Solver tvdlf| (esquema de Lax-Friedrichs, equivalente al de Rusanov usado aquí) y comparar de nuevo; si los bordes y las velocidades poloidales se acercan, la causa queda establecida. Además, conviene completar la evolución hasta $t=100$, normalizar las velocidades poloidales por la velocidad de rotación y repetir el análisis con dos o más resoluciones para estimar el orden de convergencia de ambos códigos.
+
 \begin{thebibliography}{99}
 
 \bibitem{plutomanual}
@@ -536,7 +753,7 @@ Mignone, A. et al. (2024). PLUTO: User's Guide. \url{https://plutocode.ph.unito.
 Papaloizou, J.C.B. \& Pringle, J.E. (1984). The dynamical stability of differentially rotating discs with constant specific angular momentum. \textit{Monthly Notices of the Royal Astronomical Society}. Vol. 208. \doi{10.1093/mnras/208.4.721}
 
 \bibitem{Goldreich}
-Goldreich, P. \& Goodman, J. (1986). The stability of accretion tori. \textit{Monthly Notices of the Royal Astronomical Society}. Vol. 221. \doi{https://doi.org/10.1093/mnras/221.2.339}
+Goldreich, P. \& Goodman, J. (1986). The stability of accretion tori. \textit{Monthly Notices of the Royal Astronomical Society}. Vol. 221. \doi{10.1093/mnras/221.2.339}
 
 \bibitem{Hawley}
 Hawley, J.F. (2000). Global Magnetohydrodynamical Simulations of Accretion Tori. \textit{The Astrophysical Journal}. Vol. 528. \doi{10.1086/308180}
@@ -545,7 +762,7 @@ Hawley, J.F. (2000). Global Magnetohydrodynamical Simulations of Accretion Tori.
 Hawley, J.F. \& Balbus, S.A. (1991). A Powerful Local Shear Instability in Weakly Magnetized Disks. \textit{Astrophysical Journal}. Vol. 376. \doi{10.1086/170270}
 
 \bibitem{Kuwabara}
-Kuwabara, T., Shibata, K., Kudoh, T. \& Matsumoto, R. (2005). The Acceleration Mechanism of Resistive Magnetohydrodynamic Jets Launched from Accretion Disks. \textit{Astrophysical Journal}. Vol. 621. \doi{https://doi.org/10.1086/427720}
+Kuwabara, T., Shibata, K., Kudoh, T. \& Matsumoto, R. (2005). The Acceleration Mechanism of Resistive Magnetohydrodynamic Jets Launched from Accretion Disks. \textit{Astrophysical Journal}. Vol. 621. \doi{10.1086/427720}
 
 \end{thebibliography}
 
